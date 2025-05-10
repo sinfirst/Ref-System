@@ -1,3 +1,3 @@
 module github.com/sinfirst/Ref-System
 
-go 1.24.2
+go 1.23.9
