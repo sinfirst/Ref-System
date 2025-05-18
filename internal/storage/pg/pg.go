@@ -2,6 +2,8 @@ package pg
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sinfirst/Ref-System/internal/config"
@@ -64,4 +66,58 @@ func (p *PGDB) GetUserPassword(ctx context.Context, username string) string {
 	row.Scan(&password)
 
 	return password
+}
+
+func (p *PGDB) GetOrderAndUser(ctx context.Context, order string) (string, string, error) {
+	var userOrder string
+	var username string
+
+	query := `SELECT number, username FROM orders WHERE number = $1`
+	row := p.db.QueryRow(ctx, query, order)
+	err := row.Scan(&userOrder, &username)
+
+	return userOrder, username, err
+}
+
+func (p *PGDB) AddOrderToDB(ctx context.Context, order string, username string) error {
+	query := `INSERT INTO orders (number, uploaded_at, username)
+				VALUES ($1, $2, $3) ON CONFLICT (number) DO NOTHING`
+
+	_, err := p.db.Exec(ctx, query, order, time.Now(), username)
+
+	return err
+}
+
+func (p *PGDB) UpdateStatus(ctx context.Context, newStatus, order, user string) error {
+	query := `UPDATE orders SET status = $1
+			WHERE number = $2`
+
+	result, err := p.db.Exec(ctx, query, newStatus, order)
+
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("0 rows affected")
+	}
+
+	return nil
+}
+
+func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, withdrawn float32) error {
+	query := `UPDATE users SET accrual = $1, withdrawn = $2
+			WHERE username = $3`
+
+	result, err := p.db.Exec(ctx, query, int(accrual*100), int(withdrawn*1000), user)
+
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("0 rows affected")
+	}
+
+	return nil
 }
