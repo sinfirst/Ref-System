@@ -214,7 +214,57 @@ func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
+	var data models.UserWithdrawal
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "invalid request ", http.StatusUnprocessableEntity)
+		return
+	}
 
+	if len(body) == 0 {
+		http.Error(w, "request is empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := json.Unmarshal(body, &data); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	}
+
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "user unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user := auth.GetUsername(cookie.Value)
+	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
+
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if userBalance.Current < data.Sum {
+		http.Error(w, "Not enough balance", http.StatusPaymentRequired)
+		return
+	}
+
+	finalSum := userBalance.Current - data.Sum
+	err = a.storage.UpdateUserBalance(r.Context(), user, finalSum, data.Sum)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = a.storage.SetUserWithdrawn(r.Context(), data.OrderNum, user, data.Sum)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
 

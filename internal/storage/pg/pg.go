@@ -166,3 +166,12 @@ func (p *PGDB) GetUserBalance(ctx context.Context, user string) (models.UserBala
 
 	return balance, nil
 }
+
+func (p *PGDB) SetUserWithdrawn(ctx context.Context, orderNum, user string, withdrawn float32) error {
+	query := `INSERT INTO withdrawals (orderNum, sum, precessed_at, username)
+				VALUES ($1, $2, $3, $4) ON CONFLICT (orderNum) DO NOTHING`
+
+	_, err := p.db.Exec(ctx, query, orderNum, withdrawn*100, time.Now(), user)
+
+	return err
+}
