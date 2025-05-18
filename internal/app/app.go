@@ -116,7 +116,7 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("token")
+	cookie, _ := r.Cookie("token")
 	user := auth.GetUsername(cookie.Value)
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
@@ -142,7 +142,7 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
 
-	cookie, err := r.Cookie("token")
+	cookie, _ := r.Cookie("token")
 
 	user := auth.GetUsername(cookie.Value)
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
@@ -183,7 +183,7 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("token")
+	cookie, _ := r.Cookie("token")
 
 	user := auth.GetUsername(cookie.Value)
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -218,7 +218,7 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 	}
 
-	cookie, err := r.Cookie("token")
+	cookie, _ := r.Cookie("token")
 
 	user := auth.GetUsername(cookie.Value)
 	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -251,7 +251,7 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("token")
+	cookie, _ := r.Cookie("token")
 
 	user := auth.GetUsername(cookie.Value)
 	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
