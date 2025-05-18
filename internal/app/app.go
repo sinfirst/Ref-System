@@ -191,7 +191,27 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "user unauthorized", http.StatusUnauthorized)
+		return
+	}
 
+	user := auth.GetUsername(cookie.Value)
+	balance, err := a.storage.GetUserBalance(r.Context(), user)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(balance)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 
