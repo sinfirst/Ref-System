@@ -8,7 +8,7 @@ import (
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 )
 
-func NewRouter(a *app.App, logger logging.Logger) *chi.Mux {
+func NewRouter(a *app.App, logger *logging.Logger) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logger.WithLogging)
 	router.With(compress.DecompressHandle).Post("/api/user/register", a.Register)

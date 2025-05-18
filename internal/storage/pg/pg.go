@@ -6,17 +6,18 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 	"github.com/sinfirst/Ref-System/internal/models"
 )
 
 type PGDB struct {
-	logger logging.Logger
+	logger *logging.Logger
 	db     *pgxpool.Pool
 }
 
-func NewPGDB(conf config.Config, logger logging.Logger) *PGDB {
+func NewPGDB(conf config.Config, logger *logging.Logger) *PGDB {
 	db, err := pgxpool.New(context.Background(), conf.DatabaseDsn)
 
 	if err != nil {

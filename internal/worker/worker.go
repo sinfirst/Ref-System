@@ -12,7 +12,7 @@ import (
 	"github.com/sinfirst/Ref-System/internal/storage/pg"
 )
 
-func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string, storage pg.PGDB) {
+func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string, storage *pg.PGDB) {
 	url := fmt.Sprintf("%s/api/orders/%s", accrual, orderNum)
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()

@@ -16,12 +16,12 @@ import (
 )
 
 type App struct {
-	storage pg.PGDB
+	storage *pg.PGDB
 	config  config.Config
-	logger  logging.Logger
+	logger  *logging.Logger
 }
 
-func NewApp(storage pg.PGDB, config config.Config, logger logging.Logger) *App {
+func NewApp(storage *pg.PGDB, config config.Config, logger *logging.Logger) *App {
 	app := &App{storage: storage, config: config, logger: logger}
 	return app
 }
