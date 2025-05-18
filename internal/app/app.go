@@ -58,13 +58,42 @@ func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		HttpOnly: true,
 	}
+
 	http.SetCookie(w, cookie)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
 func (a *App) Login(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	password := a.storage.GetUserPassword(r.Context(), user.Username)
+	err = bcrypt.CompareHashAndPassword([]byte(password), []byte(user.Password))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	token, err := auth.BuildJWTString(user.Username)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		HttpOnly: true,
+	}
+
+	http.SetCookie(w, cookie)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }
 func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 

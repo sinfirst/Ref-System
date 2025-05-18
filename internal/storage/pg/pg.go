@@ -55,3 +55,13 @@ func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error
 
 	return nil
 }
+
+func (p *PGDB) GetUserPassword(ctx context.Context, username string) string {
+	var password string
+
+	query := `SELECT user_password FROM users WHERE username = $1`
+	row := p.db.QueryRow(ctx, query, username)
+	row.Scan(&password)
+
+	return password
+}
