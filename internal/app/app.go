@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-chi/render"
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/functions"
 	"github.com/sinfirst/Ref-System/internal/middleware/auth"
@@ -64,7 +65,7 @@ func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("successful registration"))
+	render.JSON(w, r, map[string]string{"message": "User registration complete!"})
 }
 
 func (a *App) Login(w http.ResponseWriter, r *http.Request) {
@@ -116,11 +117,6 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "user unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	user := auth.GetUsername(cookie.Value)
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
@@ -147,10 +143,6 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
 
 	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "user unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	user := auth.GetUsername(cookie.Value)
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
@@ -192,10 +184,6 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "user unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	user := auth.GetUsername(cookie.Value)
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -231,10 +219,6 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "user unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	user := auth.GetUsername(cookie.Value)
 	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -268,10 +252,7 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 }
 func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "user unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	user := auth.GetUsername(cookie.Value)
 	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
 
