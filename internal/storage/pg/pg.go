@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
+	"github.com/sinfirst/Ref-System/internal/models"
 )
 
 type PGDB struct {
@@ -120,4 +121,48 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 	}
 
 	return nil
+}
+
+func (p *PGDB) GetUserOrders(ctx context.Context, user string) ([]models.Order, error) {
+	query := `SELECT number, status, uploaded_at 
+		FROM orders WHERE username = $1`
+	rows, err := p.db.Query(ctx, query, user)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+
+		err := rows.Scan(&o.Number, &o.Status, &o.UploadAt)
+		if err != nil {
+			return nil, err
+		}
+
+		orders = append(orders, o)
+	}
+
+	return orders, nil
+}
+
+func (p *PGDB) GetUserBalance(ctx context.Context, user string) (models.UserBalance, error) {
+	var balance models.UserBalance
+	query := `SELECT accrual, withdrawn 
+		FROM users WHERE username = $1`
+	row := p.db.QueryRow(ctx, query, user)
+	err := row.Scan(&balance.Current, &balance.Withdrawn)
+
+	if err != nil {
+		return models.UserBalance{}, err
+	}
+
+	balance = models.UserBalance{
+		Current:   balance.Current / 100,
+		Withdrawn: balance.Withdrawn / 1000,
+	}
+
+	return balance, nil
 }

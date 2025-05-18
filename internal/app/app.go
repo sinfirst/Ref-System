@@ -144,7 +144,51 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
+	var ordersFloat []models.OrderFloat
 
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "user unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user := auth.GetUsername(cookie.Value)
+	orders, err := a.storage.GetUserOrders(r.Context(), user)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for _, order := range orders {
+		ordersFloat = append(ordersFloat, models.OrderFloat{
+			Number:   order.Number,
+			Status:   order.Status,
+			Accrual:  float64(userBalance.Current),
+			UploadAt: order.UploadAt,
+		})
+	}
+
+	if len(ordersFloat) == 0 {
+		http.Error(w, "order list is empty", http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err = json.NewEncoder(w).Encode(ordersFloat)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 
