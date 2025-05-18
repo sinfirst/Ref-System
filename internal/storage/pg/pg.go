@@ -2,11 +2,13 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose"
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 	"github.com/sinfirst/Ref-System/internal/models"
@@ -204,4 +206,23 @@ func (p *PGDB) GetUserWithdrawns(ctx context.Context, user string) ([]models.Use
 	}
 
 	return UserWithdrawals, nil
+}
+
+func InitMigrations(conf config.Config, logger *logging.Logger) error {
+	if conf.DatabaseDsn == "" {
+		logger.Logger.Fatalw("DB url is not set")
+	}
+
+	db, err := sql.Open("pgx", conf.DatabaseDsn)
+	if err != nil {
+		logger.Logger.Fatalw("Failed to open DB: ", err)
+	}
+	defer db.Close()
+
+	if err := goose.Up(db, "internal/storage/migrations"); err != nil {
+		logger.Logger.Fatalw("failed to apply migrations", err)
+	}
+
+	logger.Logger.Infow("Migrations applied successfully")
+	return nil
 }
