@@ -175,3 +175,32 @@ func (p *PGDB) SetUserWithdrawn(ctx context.Context, orderNum, user string, with
 
 	return err
 }
+
+func (p *PGDB) GetUserWithdrawns(ctx context.Context, user string) ([]models.UserWithdrawal, error) {
+	query := `SELECT orderNum, sum, precessed_at 
+	FROM withdrawals WHERE username = $1`
+	rows, err := p.db.Query(ctx, query, user)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var UserWithdrawals []models.UserWithdrawal
+	for rows.Next() {
+		var o models.UserWithdrawal
+
+		err := rows.Scan(&o.OrderNum, &o.Sum, &o.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		UserWithdrawals = append(UserWithdrawals, models.UserWithdrawal{
+			Sum:         o.Sum / 100,
+			OrderNum:    o.OrderNum,
+			ProcessedAt: o.ProcessedAt,
+		})
+	}
+
+	return UserWithdrawals, nil
+}

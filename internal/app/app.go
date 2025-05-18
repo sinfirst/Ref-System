@@ -267,5 +267,29 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "user unauthorized", http.StatusUnauthorized)
+		return
+	}
+	user := auth.GetUsername(cookie.Value)
+	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
 
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(withdrawns) == 0 {
+		http.Error(w, "list withdraw is empty", http.StatusNoContent)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(withdrawns)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
