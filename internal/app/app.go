@@ -115,7 +115,12 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, _ := r.Cookie("token")
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "user unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	user := auth.GetUsername(cookie.Value)
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
@@ -129,7 +134,6 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = a.storage.AddOrderToDB(r.Context(), string(body), user)
-
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
