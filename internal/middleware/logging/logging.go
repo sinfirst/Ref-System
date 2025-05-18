@@ -7,7 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var sugar zap.SugaredLogger
+type Logger struct {
+	Logger zap.SugaredLogger
+}
 
 type ResponseData struct {
 	status int
@@ -19,6 +21,19 @@ type loggingResponseWriter struct {
 	responseData *ResponseData
 }
 
+func NewLogger() *Logger {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+
+	sugar := *logger.Sugar()
+
+	return &Logger{
+		Logger: sugar,
+	}
+}
+
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
@@ -27,16 +42,9 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.status = statusCode
 }
 
-type ResponseWriter interface {
-	Header() http.Header
-	Write([]byte) (int, error)
-	WriteHeader(statusCode int)
-}
-
-func WithLogging(h http.Handler) http.Handler {
+func (l *Logger) WithLogging(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -52,7 +60,7 @@ func WithLogging(h http.Handler) http.Handler {
 		h.ServeHTTP(&lw, r)
 
 		duration := time.Since(start)
-		sugar.Infoln(
+		l.Logger.Infoln(
 			"\n",
 			"-----REQUEST-----\n",
 			"URI:", r.RequestURI, "\n",
@@ -63,17 +71,4 @@ func WithLogging(h http.Handler) http.Handler {
 			"Size:", responseData.size, "\n",
 		)
 	})
-}
-
-func NewLogger() zap.SugaredLogger {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
-
-	defer logger.Sync()
-
-	sugar = *logger.Sugar()
-
-	return sugar
 }
