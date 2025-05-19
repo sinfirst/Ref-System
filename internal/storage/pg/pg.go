@@ -49,10 +49,10 @@ func (p *PGDB) CheckUsernameLogin(ctx context.Context, username string) bool {
 
 func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error {
 	var insertedUser string
+
 	query := `INSERT INTO users (username, user_password)
 				VALUES ($1, $2) ON CONFLICT (username) DO NOTHING
 				RETURNING username`
-
 	err := p.db.QueryRow(ctx, query, username, password).Scan(&insertedUser)
 
 	if err != nil {
@@ -86,7 +86,6 @@ func (p *PGDB) GetOrderAndUser(ctx context.Context, order string) (string, strin
 func (p *PGDB) AddOrderToDB(ctx context.Context, order string, username string) error {
 	query := `INSERT INTO orders (number, uploaded_at, username)
 				VALUES ($1, $2, $3) ON CONFLICT (number) DO NOTHING`
-
 	_, err := p.db.Exec(ctx, query, order, time.Now(), username)
 
 	return err
@@ -95,7 +94,6 @@ func (p *PGDB) AddOrderToDB(ctx context.Context, order string, username string) 
 func (p *PGDB) UpdateStatus(ctx context.Context, newStatus, order, user string) error {
 	query := `UPDATE orders SET status = $1
 			WHERE number = $2`
-
 	result, err := p.db.Exec(ctx, query, newStatus, order)
 
 	if err != nil {
@@ -112,7 +110,6 @@ func (p *PGDB) UpdateStatus(ctx context.Context, newStatus, order, user string) 
 func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, withdrawn float32) error {
 	query := `UPDATE users SET accrual = $1, withdrawn = $2
 			WHERE username = $3`
-
 	result, err := p.db.Exec(ctx, query, int(accrual*100), int(withdrawn*1000), user)
 
 	if err != nil {
@@ -127,6 +124,7 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 }
 
 func (p *PGDB) GetUserOrders(ctx context.Context, user string) ([]models.Order, error) {
+	var orders []models.Order
 	query := `SELECT number, status, uploaded_at 
 		FROM orders WHERE username = $1`
 	rows, err := p.db.Query(ctx, query, user)
@@ -136,7 +134,6 @@ func (p *PGDB) GetUserOrders(ctx context.Context, user string) ([]models.Order, 
 	}
 	defer rows.Close()
 
-	var orders []models.Order
 	for rows.Next() {
 		var o models.Order
 
@@ -173,15 +170,15 @@ func (p *PGDB) GetUserBalance(ctx context.Context, user string) (models.UserBala
 func (p *PGDB) SetUserWithdrawn(ctx context.Context, orderNum, user string, withdrawn float32) error {
 	query := `INSERT INTO withdrawals (orderNum, sum, precessed_at, username)
 				VALUES ($1, $2, $3, $4) ON CONFLICT (orderNum) DO NOTHING`
-
 	_, err := p.db.Exec(ctx, query, orderNum, withdrawn*100, time.Now(), user)
 
 	return err
 }
 
 func (p *PGDB) GetUserWithdrawns(ctx context.Context, user string) ([]models.UserWithdrawal, error) {
+	var UserWithdrawals []models.UserWithdrawal
 	query := `SELECT orderNum, sum, precessed_at 
-	FROM withdrawals WHERE username = $1`
+				FROM withdrawals WHERE username = $1`
 	rows, err := p.db.Query(ctx, query, user)
 
 	if err != nil {
@@ -189,7 +186,6 @@ func (p *PGDB) GetUserWithdrawns(ctx context.Context, user string) ([]models.Use
 	}
 	defer rows.Close()
 
-	var UserWithdrawals []models.UserWithdrawal
 	for rows.Next() {
 		var o models.UserWithdrawal
 
@@ -210,17 +206,17 @@ func (p *PGDB) GetUserWithdrawns(ctx context.Context, user string) ([]models.Use
 
 func InitMigrations(conf config.Config, logger *logging.Logger) error {
 	if conf.DatabaseDsn == "" {
-		logger.Logger.Fatalw("DB url is not set")
+		return fmt.Errorf("DB url is not set")
 	}
 
 	db, err := sql.Open("pgx", conf.DatabaseDsn)
 	if err != nil {
-		logger.Logger.Fatalw("Failed to open DB: ", err)
+		return err
 	}
 	defer db.Close()
 
 	if err := goose.Up(db, "internal/storage/migrations"); err != nil {
-		logger.Logger.Fatalw("failed to apply migrations", err)
+		return err
 	}
 
 	logger.Logger.Infow("Migrations applied successfully")

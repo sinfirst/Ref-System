@@ -24,7 +24,9 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 	for {
 		select {
 		case <-ticker.C:
+			var responce models.OrderResponce
 			attempts++
+
 			if attempts > maxAttempts {
 				fmt.Println("Превышено количество попыток")
 				return
@@ -42,7 +44,6 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 				continue
 			}
 
-			var responce models.OrderResponce
 			err = json.Unmarshal(body, &responce)
 			if err != nil {
 				fmt.Println("Ошибка парсинга:", err)

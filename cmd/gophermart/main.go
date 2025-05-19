@@ -17,7 +17,10 @@ func main() {
 	db := pg.NewPGDB(conf, logger)
 	app := app.NewApp(db, conf, logger)
 	router := router.NewRouter(app, logger)
-	_ = pg.InitMigrations(conf, logger)
+	err := pg.InitMigrations(conf, logger)
+	if err != nil {
+		logger.Logger.Fatalw("Failed init migrations:", err)
+	}
 	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 
 	logger.Logger.Infow("Start server", "addr: ", server.Addr)

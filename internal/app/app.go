@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/render"
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/functions"
 	"github.com/sinfirst/Ref-System/internal/middleware/auth"
@@ -29,6 +28,7 @@ func NewApp(storage *pg.PGDB, config config.Config, logger *logging.Logger) *App
 
 func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.User
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 
 	if err != nil {
@@ -41,7 +41,13 @@ func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	err = a.storage.AddUserToDB(r.Context(), user.Username, string(hashedPassword))
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
@@ -65,11 +71,11 @@ func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	render.JSON(w, r, map[string]string{"message": "User registration complete!"})
 }
 
 func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 	var user models.User
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
@@ -89,12 +95,12 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	cookie := &http.Cookie{
 		Name:     "token",
 		Value:    token,
 		HttpOnly: true,
 	}
-
 	http.SetCookie(w, cookie)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -143,7 +149,6 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
 
 	cookie, _ := r.Cookie("token")
-
 	user := auth.GetUsername(cookie.Value)
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
 	if err != nil {
@@ -174,7 +179,6 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
 	err = json.NewEncoder(w).Encode(ordersFloat)
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
@@ -184,7 +188,6 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
-
 	user := auth.GetUsername(cookie.Value)
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
 	if err != nil {
