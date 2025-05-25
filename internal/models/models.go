@@ -21,8 +21,8 @@ type Order struct {
 }
 
 type UserBalance struct {
-	Current   float32 `json:"current"`
-	Withdrawn float32 `json:"withdrawn"`
+	Current   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
 
 type OrderFloat struct {
@@ -34,6 +34,6 @@ type OrderFloat struct {
 
 type UserWithdrawal struct {
 	OrderNum    string    `json:"order"`
-	Sum         float32   `json:"sum"`
+	Sum         float64   `json:"sum"`
 	ProcessedAt time.Time `json:"processed_at"`
 }
