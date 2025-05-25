@@ -48,7 +48,7 @@ func (p *PGDB) CheckUsernameExists(ctx context.Context, username string) (bool, 
 		return false, fmt.Errorf("checking user existence: %w", err)
 	}
 	return exists, nil
-}
+} //
 
 func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error {
 	var insertedUser string
