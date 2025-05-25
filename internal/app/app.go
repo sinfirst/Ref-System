@@ -87,7 +87,11 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	password := a.storage.GetUserPassword(r.Context(), user.Username)
+	password, err := a.storage.GetUserPassword(r.Context(), user.Username)
+	if err != nil {
+		http.Error(w, "login doesn't exist", http.StatusUnauthorized)
+		return
+	}
 	err = bcrypt.CompareHashAndPassword([]byte(password), []byte(user.Password))
 	if err != nil {
 		http.Error(w, "wrong login or password", http.StatusUnauthorized)

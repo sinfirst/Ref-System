@@ -53,12 +53,9 @@ func (p *PGDB) CheckUsernameExists(ctx context.Context, username string) (bool, 
 func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error {
 	var insertedUser string
 
-	query := `
-		INSERT INTO users (username, user_password)
-		VALUES ($1, $2)
-		ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
-		RETURNING username
-	`
+	query := `INSERT INTO users (username, user_password)
+				VALUES ($1, $2) ON CONFLICT (username) DO NOTHING
+				RETURNING username`
 	err := p.db.QueryRow(ctx, query, username, password).Scan(&insertedUser)
 
 	if err != nil {
@@ -68,14 +65,16 @@ func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error
 	return nil
 }
 
-func (p *PGDB) GetUserPassword(ctx context.Context, username string) string {
+func (p *PGDB) GetUserPassword(ctx context.Context, username string) (string, error) {
 	var password string
 
 	query := `SELECT user_password FROM users WHERE username = $1`
 	row := p.db.QueryRow(ctx, query, username)
-	row.Scan(&password)
-
-	return password
+	err := row.Scan(&password)
+	if err != nil {
+		return "", err
+	}
+	return password, nil
 }
 
 func (p *PGDB) GetOrderAndUser(ctx context.Context, order string) (string, string, error) {
