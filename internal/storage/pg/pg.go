@@ -37,22 +37,28 @@ func NewPGDB(conf config.Config, logger *logging.Logger) *PGDB {
 	return &PGDB{logger: logger, db: db}
 }
 
-func (p *PGDB) CheckUsernameLogin(ctx context.Context, username string) bool {
-	var user string
-
-	query := `SELECT username FROM users WHERE username = $1`
-	row := p.db.QueryRow(ctx, query, username)
-	row.Scan(&user)
-
-	return user != ""
+func (p *PGDB) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
+	var exists bool
+	err := p.db.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM users WHERE username = $1
+		)
+	`, username).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking user existence: %w", err)
+	}
+	return exists, nil
 }
 
 func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error {
 	var insertedUser string
 
-	query := `INSERT INTO users (username, user_password)
-				VALUES ($1, $2) ON CONFLICT (username) DO NOTHING
-				RETURNING username`
+	query := `
+		INSERT INTO users (username, user_password)
+		VALUES ($1, $2)
+		ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
+		RETURNING username
+	`
 	err := p.db.QueryRow(ctx, query, username, password).Scan(&insertedUser)
 
 	if err != nil {

@@ -35,8 +35,13 @@ func (a *App) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-
-	if exist := a.storage.CheckUsernameLogin(r.Context(), user.Username); exist {
+	exist, err := a.storage.CheckUsernameExists(r.Context(), user.Username)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if exist {
 		http.Error(w, "username already used, try choose another", http.StatusConflict)
 		return
 	}
