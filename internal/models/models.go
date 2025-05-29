@@ -9,7 +9,7 @@ type User struct {
 	Password string `json:"password,omitempty"`
 }
 
-type OrderResponce struct {
+type OrderResponse struct {
 	Order   string  `json:"order"`
 	Status  string  `json:"status"`
 	Accrual float64 `json:"accrual"`

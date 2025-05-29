@@ -138,12 +138,9 @@ func (p *PGDB) UpdateStatusAndBalanceForWorker(ctx context.Context, newStatus, o
             UPDATE users SET accrual = $3, withdrawn = $4 WHERE username = $5;
         COMMIT;
     `
-	result, err := p.db.Exec(ctx, query, newStatus, order, int(accrual*100), int(withdrawn*1000), user)
+	_, err := p.db.Exec(ctx, query, newStatus, order, int(accrual*100), int(withdrawn*1000), user)
 	if err != nil {
 		return err
-	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("0 rows affected")
 	}
 	return nil
 }

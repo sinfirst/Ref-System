@@ -60,7 +60,7 @@ func (w *Worker) Poll(ctx context.Context, order models.TypeForChannel) error {
 	for {
 		select {
 		case <-ticker.C:
-			var response models.OrderResponce
+			var response models.OrderResponse
 			attempts++
 
 			if attempts > maxAttempts {
