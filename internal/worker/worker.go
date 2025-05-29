@@ -31,7 +31,13 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 				fmt.Println("Превышено количество попыток")
 				return
 			}
-			resp, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+			req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+			if err != nil {
+				fmt.Println("req create error:", err)
+				continue
+			}
+			client := &http.Client{}
+			resp, err := client.Do(req)
 			if err != nil {
 				fmt.Println("poll error:", err)
 				continue

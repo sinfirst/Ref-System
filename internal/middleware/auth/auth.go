@@ -31,7 +31,7 @@ func BuildJWTString(user string) (string, error) {
 	return tokenString, nil
 }
 
-func GetUsername(tokenString string) string {
+func GetUsername(tokenString string) (string, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
@@ -41,14 +41,14 @@ func GetUsername(tokenString string) string {
 			return []byte(config.SecretKey), nil
 		})
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if !token.Valid {
-		return ""
+		return "", fmt.Errorf("token no valid")
 	}
 
-	return claims.Username
+	return claims.Username, nil
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {

@@ -132,7 +132,12 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie, _ := r.Cookie("token")
-	user := auth.GetUsername(cookie.Value)
+	user, err := auth.GetUsername(cookie.Value)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
 		if user == username {
@@ -158,7 +163,13 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
 
 	cookie, _ := r.Cookie("token")
-	user := auth.GetUsername(cookie.Value)
+	user, err := auth.GetUsername(cookie.Value)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
@@ -197,7 +208,12 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
-	user := auth.GetUsername(cookie.Value)
+	user, err := auth.GetUsername(cookie.Value)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
@@ -232,7 +248,12 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 
 	cookie, _ := r.Cookie("token")
 
-	user := auth.GetUsername(cookie.Value)
+	user, err := auth.GetUsername(cookie.Value)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
 
 	if err != nil {
@@ -265,7 +286,12 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
 
-	user := auth.GetUsername(cookie.Value)
+	user, err := auth.GetUsername(cookie.Value)
+	if err != nil {
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
 
 	if err != nil {
