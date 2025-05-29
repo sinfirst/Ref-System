@@ -14,11 +14,11 @@ func NewRouter(a *app.App, logger *logging.Logger) *chi.Mux {
 	router.With(compress.DecompressHandle).Post("/api/user/register", a.Register)
 	router.With(compress.DecompressHandle).Post("/api/user/login", a.Login)
 	router.With(compress.DecompressHandle, auth.AuthMiddleware).Post("/api/user/orders", a.OrdersIn)
-	router.With(compress.DecompressHandle, auth.AuthMiddleware).Post("/api/user/balance/withdraw", a.WithDraw)
+	router.With(compress.DecompressHandle, auth.AuthMiddleware).Post("/api/user/balance/withdraw", a.Withdraw)
 
 	router.With(compress.CompressHandle, auth.AuthMiddleware).Get("/api/user/orders", a.OrdersInfo)
 	router.With(compress.CompressHandle, auth.AuthMiddleware).Get("/api/user/balance", a.GetBalance)
-	router.With(compress.CompressHandle, auth.AuthMiddleware).Get("/api/user/withdrawals", a.WithDrawInfo)
+	router.With(compress.CompressHandle, auth.AuthMiddleware).Get("/api/user/withdrawals", a.WithdrawInfo)
 
 	return router
 }

@@ -22,8 +22,7 @@ type App struct {
 }
 
 func NewApp(storage *pg.PGDB, config config.Config, logger *logging.Logger) *App {
-	app := &App{storage: storage, config: config, logger: logger}
-	return app
+	return &App{storage: storage, config: config, logger: logger}
 }
 
 func (a *App) Register(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +88,8 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 
 	password, err := a.storage.GetUserPassword(r.Context(), user.Username)
 	if err != nil {
-		http.Error(w, "login doesn't exist", http.StatusUnauthorized)
+		a.logger.Logger.Errorf("err: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(password), []byte(user.Password))
@@ -229,7 +229,7 @@ func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
+func (a *App) Withdraw(w http.ResponseWriter, r *http.Request) {
 	var data models.UserWithdrawal
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -244,6 +244,7 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.Unmarshal(body, &data); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
 	}
 
 	cookie, _ := r.Cookie("token")
@@ -283,7 +284,7 @@ func (a *App) WithDraw(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
-func (a *App) WithDrawInfo(w http.ResponseWriter, r *http.Request) {
+func (a *App) WithdrawInfo(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
 
 	user, err := auth.GetUsername(cookie.Value)
