@@ -58,7 +58,7 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 					return
 				}
 
-				err = storage.UpdateUserBalance(ctx, user, float32(response.Accrual), 0)
+				err = storage.UpdateUserBalance(ctx, user, float64(response.Accrual), 0)
 
 				if err != nil {
 					fmt.Println("Error in update db: ", err)
