@@ -10,18 +10,17 @@ import (
 	"github.com/sinfirst/Ref-System/internal/middleware/auth"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 	"github.com/sinfirst/Ref-System/internal/models"
-	"github.com/sinfirst/Ref-System/internal/storage/pg"
 	"github.com/sinfirst/Ref-System/internal/worker"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type App struct {
-	storage *pg.PGDB
+	storage models.Storage
 	config  config.Config
 	logger  *logging.Logger
 }
 
-func NewApp(storage *pg.PGDB, config config.Config, logger *logging.Logger) *App {
+func NewApp(storage models.Storage, config config.Config, logger *logging.Logger) *App {
 	return &App{storage: storage, config: config, logger: logger}
 }
 

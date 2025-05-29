@@ -7,6 +7,7 @@ import (
 	"github.com/sinfirst/Ref-System/internal/config"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 	"github.com/sinfirst/Ref-System/internal/router"
+	"github.com/sinfirst/Ref-System/internal/storage"
 	"github.com/sinfirst/Ref-System/internal/storage/pg"
 )
 
@@ -14,8 +15,8 @@ func main() {
 
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
-	db := pg.NewPGDB(conf, logger)
-	app := app.NewApp(db, conf, logger)
+	stg := storage.NewStorage(conf, logger)
+	app := app.NewApp(stg, conf, logger)
 	router := router.NewRouter(app, logger)
 	err := pg.InitMigrations(conf, logger)
 	if err != nil {
