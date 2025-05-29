@@ -53,9 +53,12 @@ func (p *PGDB) CheckUsernameExists(ctx context.Context, username string) (bool, 
 func (p *PGDB) AddUserToDB(ctx context.Context, username, password string) error {
 	var insertedUser string
 
-	query := `INSERT INTO users (username, user_password)
-				VALUES ($1, $2) ON CONFLICT (username) DO NOTHING
-				RETURNING username`
+	query := `
+		INSERT INTO users (username, user_password)
+		VALUES ($1, $2)
+		ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
+		RETURNING username
+	`
 	err := p.db.QueryRow(ctx, query, username, password).Scan(&insertedUser)
 
 	if err != nil {

@@ -24,7 +24,7 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 	for {
 		select {
 		case <-ticker.C:
-			var responce models.OrderResponce
+			var response models.OrderResponce
 			attempts++
 
 			if attempts > maxAttempts {
@@ -44,21 +44,25 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 				continue
 			}
 
-			err = json.Unmarshal(body, &responce)
+			err = json.Unmarshal(body, &response)
 			if err != nil {
 				fmt.Println("Ошибка парсинга:", err)
 				return
 			}
 
-			if responce.Status == "PROCESSED" {
-				err := storage.UpdateStatus(ctx, responce.Status, responce.Order, user)
+			if response.Status == "PROCESSED" {
+				err := storage.UpdateStatus(ctx, response.Status, response.Order, user)
 
 				if err != nil {
 					fmt.Println("Error in update db: ", err)
 					return
 				}
 
+<<<<<<< HEAD
 				err = storage.UpdateUserBalance(ctx, user, float64(responce.Accrual), 0)
+=======
+				err = storage.UpdateUserBalance(ctx, user, float64(response.Accrual), 0)
+>>>>>>> d5d52445139ba0561783067bca77ff93cc6deaef
 
 				if err != nil {
 					fmt.Println("Error in update db: ", err)
@@ -66,10 +70,13 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 				}
 				return
 			} else {
-				fmt.Println(responce.Status, " not equal PROCESSED!")
+				fmt.Println(response.Status, " not equal PROCESSED!")
 			}
 		case <-timeout:
 			fmt.Println("Time is out")
+			return
+		case <-ctx.Done():
+			fmt.Println("Done")
 			return
 		}
 	}
