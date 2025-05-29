@@ -67,7 +67,7 @@ func (w *Worker) Poll(ctx context.Context, order models.TypeForChannel) error {
 				return fmt.Errorf("превышено количество попыток")
 			}
 			url := fmt.Sprintf("%s/api/orders/%s", w.accrual, order.OrderNum)
-			req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 			if err != nil {
 				fmt.Println("req create error:", err)
 				continue
