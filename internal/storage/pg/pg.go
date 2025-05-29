@@ -131,6 +131,22 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 	return nil
 }
 
+func (p *PGDB) UpdateStatusAndBalanceForWorker(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
+	query := `
+        BEGIN;
+            UPDATE orders SET status = $1 WHERE number = $2;
+            UPDATE users SET accrual = $3, withdrawn = $4 WHERE username = $5;
+        COMMIT;
+    `
+	result, err := p.db.Exec(ctx, query, newStatus, order, int(accrual*100), int(withdrawn*1000), user)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("0 rows affected")
+	}
+	return nil
+}
 func (p *PGDB) GetUserOrders(ctx context.Context, user string) ([]models.Order, error) {
 	var orders []models.Order
 	query := `SELECT number, status, uploaded_at 
