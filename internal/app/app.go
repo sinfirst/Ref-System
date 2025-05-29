@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -13,14 +14,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Storage interface {
+	CheckUsernameExists(ctx context.Context, username string) (bool, error)
+	AddUserToDB(ctx context.Context, username, password string) error
+	GetUserPassword(ctx context.Context, username string) (string, error)
+	GetOrderAndUser(ctx context.Context, order string) (string, string, error)
+	AddOrderToDB(ctx context.Context, order string, username string) error
+	UpdateStatus(ctx context.Context, newStatus, order, user string) error
+	UpdateUserBalance(ctx context.Context, user string, accrual, withdrawn float64) error
+	GetUserOrders(ctx context.Context, user string) ([]models.Order, error)
+	GetUserBalance(ctx context.Context, user string) (models.UserBalance, error)
+	SetUserWithdrawn(ctx context.Context, orderNum, user string, withdrawn float64) error
+	GetUserWithdrawns(ctx context.Context, user string) ([]models.UserWithdrawal, error)
+}
+
 type App struct {
-	storage models.Storage
+	storage Storage
 	config  config.Config
 	logger  *logging.Logger
 	pollCh  chan models.TypeForChannel
 }
 
-func NewApp(storage models.Storage, config config.Config, logger *logging.Logger, pollCh chan models.TypeForChannel) *App {
+func NewApp(storage Storage, config config.Config, logger *logging.Logger, pollCh chan models.TypeForChannel) *App {
 	return &App{storage: storage, config: config, logger: logger, pollCh: pollCh}
 }
 
