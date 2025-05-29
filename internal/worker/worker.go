@@ -6,20 +6,57 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/sinfirst/Ref-System/internal/models"
+	"github.com/sinfirst/Ref-System/internal/storage/pg"
 )
 
-func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string, storage models.Storage) {
-	url := fmt.Sprintf("%s/api/orders/%s", accrual, orderNum)
+type Worker struct {
+	pollCh  chan models.TypeForChannel
+	db      *pg.PGDB
+	accrual string
+	wg      sync.WaitGroup
+}
+
+func NewPollWorker(ctx context.Context, accrual string, db *pg.PGDB, pollCh chan models.TypeForChannel) *Worker {
+	worker := &Worker{
+		db:      db,
+		pollCh:  pollCh,
+		accrual: accrual,
+	}
+
+	worker.wg.Add(1)
+	go worker.PollOrderStatus(ctx)
+
+	return worker
+}
+
+func (w *Worker) PollOrderStatus(ctx context.Context) {
+	defer w.wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case order, ok := <-w.pollCh:
+			if !ok {
+				return
+			}
+			err := w.Poll(ctx, order)
+			if err != nil {
+				return
+			}
+		}
+
+	}
+}
+func (w *Worker) Poll(ctx context.Context, order models.TypeForChannel) error {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-
 	timeout := time.After(2 * time.Minute)
 	attempts := 0
 	maxAttempts := 12
-
 	for {
 		select {
 		case <-ticker.C:
@@ -27,9 +64,9 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 			attempts++
 
 			if attempts > maxAttempts {
-				fmt.Println("Превышено количество попыток")
-				return
+				return fmt.Errorf("превышено количество попыток")
 			}
+			url := fmt.Sprintf("%s/api/orders/%s", w.accrual, order.OrderNum)
 			req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
 			if err != nil {
 				fmt.Println("req create error:", err)
@@ -51,34 +88,30 @@ func PollOrderStatus(ctx context.Context, orderNum, user string, accrual string,
 
 			err = json.Unmarshal(body, &response)
 			if err != nil {
-				fmt.Println("Ошибка парсинга:", err)
-				return
+				return fmt.Errorf("ошибка парсинга: ")
 			}
 
 			if response.Status == "PROCESSED" {
-				err := storage.UpdateStatus(ctx, response.Status, response.Order, user)
+				err := w.db.UpdateStatus(ctx, response.Status, response.Order, order.User)
 
 				if err != nil {
-					fmt.Println("Error in update db: ", err)
-					return
+					return fmt.Errorf("error in update db: ")
 				}
 
-				err = storage.UpdateUserBalance(ctx, user, float64(response.Accrual), 0)
+				err = w.db.UpdateUserBalance(ctx, order.User, float64(response.Accrual), 0)
 
 				if err != nil {
-					fmt.Println("Error in update db: ", err)
-					return
+					return fmt.Errorf("error in update db: ")
 				}
-				return
+				return nil
 			} else {
 				fmt.Println(response.Status, " not equal PROCESSED!")
 			}
 		case <-timeout:
-			fmt.Println("Time is out")
-			return
-		case <-ctx.Done():
-			fmt.Println("Done")
-			return
+			return fmt.Errorf("time is out")
 		}
 	}
+}
+func (w *Worker) StopWorker() {
+	w.wg.Wait()
 }

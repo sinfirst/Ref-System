@@ -41,6 +41,11 @@ type UserWithdrawal struct {
 	ProcessedAt time.Time `json:"processed_at"`
 }
 
+type TypeForChannel struct {
+	OrderNum string
+	User     string
+}
+
 type Storage interface {
 	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	AddUserToDB(ctx context.Context, username, password string) error

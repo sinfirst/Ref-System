@@ -10,7 +10,6 @@ import (
 	"github.com/sinfirst/Ref-System/internal/middleware/auth"
 	"github.com/sinfirst/Ref-System/internal/middleware/logging"
 	"github.com/sinfirst/Ref-System/internal/models"
-	"github.com/sinfirst/Ref-System/internal/worker"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,10 +17,11 @@ type App struct {
 	storage models.Storage
 	config  config.Config
 	logger  *logging.Logger
+	pollCh  chan models.TypeForChannel
 }
 
-func NewApp(storage models.Storage, config config.Config, logger *logging.Logger) *App {
-	return &App{storage: storage, config: config, logger: logger}
+func NewApp(storage models.Storage, config config.Config, logger *logging.Logger, pollCh chan models.TypeForChannel) *App {
+	return &App{storage: storage, config: config, logger: logger, pollCh: pollCh}
 }
 
 func (a *App) Register(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	worker.PollOrderStatus(r.Context(), string(body), user, a.config.AccurualSystemAddress, a.storage)
+	a.pollCh <- models.TypeForChannel{User: user, OrderNum: string(body)}
 	w.WriteHeader(http.StatusAccepted)
 }
 func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
