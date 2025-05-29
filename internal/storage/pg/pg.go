@@ -132,16 +132,33 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 }
 
 func (p *PGDB) UpdateStatusAndBalanceForWorker(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
-	query := `
-        BEGIN;
-            UPDATE orders SET status = $1 WHERE number = $2;
-            UPDATE users SET accrual = $3, withdrawn = $4 WHERE username = $5;
-        COMMIT;
-    `
-	_, err := p.db.Exec(ctx, query, newStatus, order, int(accrual*100), int(withdrawn*1000), user)
+	tx, err := p.db.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer tx.Rollback(ctx)
+
+	res, err := tx.Exec(ctx, "UPDATE orders SET status = $1 WHERE number = $2", newStatus, order)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("order not found")
+	}
+
+	res, err = tx.Exec(ctx, "UPDATE users SET accrual = accrual + $1, withdrawn = withdrawn + $2 WHERE username = $3",
+		int(accrual*100), int(withdrawn*100), user)
+	if err != nil {
+		return fmt.Errorf("failed to update user balance: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
 func (p *PGDB) GetUserOrders(ctx context.Context, user string) ([]models.Order, error) {
