@@ -59,6 +59,8 @@ func (w *Worker) Poll(ctx context.Context, order models.TypeForChannel) error {
 	maxAttempts := 12
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case <-ticker.C:
 			var response models.OrderResponse
 			attempts++

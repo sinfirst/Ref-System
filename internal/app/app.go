@@ -145,7 +145,8 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed Luhn algo", http.StatusUnprocessableEntity)
 		return
 	}
-	value := r.Context().Value("userName")
+	ctxK := models.CtxKey("userName")
+	value := r.Context().Value(ctxK)
 	user := fmt.Sprintf("%v", value)
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
@@ -170,8 +171,8 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 }
 func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
-
-	value := r.Context().Value("userName")
+	ctxK := models.CtxKey("userName")
+	value := r.Context().Value(ctxK)
 	user := fmt.Sprintf("%v", value)
 
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
@@ -211,7 +212,8 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
-	value := r.Context().Value("userName")
+	ctxK := models.CtxKey("userName")
+	value := r.Context().Value(ctxK)
 	user := fmt.Sprintf("%v", value)
 
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -246,8 +248,8 @@ func (a *App) Withdraw(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userName")
+	ctxK := models.CtxKey("userName")
+	value := r.Context().Value(ctxK)
 	user := fmt.Sprintf("%v", value)
 
 	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
@@ -280,7 +282,8 @@ func (a *App) Withdraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (a *App) WithdrawInfo(w http.ResponseWriter, r *http.Request) {
-	value := r.Context().Value("userName")
+	ctxK := models.CtxKey("userName")
+	value := r.Context().Value(ctxK)
 	user := fmt.Sprintf("%v", value)
 
 	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
