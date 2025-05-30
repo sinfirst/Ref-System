@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+type CtxKey string
+
 type User struct {
 	Username string `json:"login"`
 	Password string `json:"password,omitempty"`

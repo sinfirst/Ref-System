@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -144,14 +145,8 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed Luhn algo", http.StatusUnprocessableEntity)
 		return
 	}
-
-	cookie, _ := r.Cookie("token")
-	user, err := auth.GetUsername(cookie.Value)
-	if err != nil {
-		a.logger.Logger.Errorf("err: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	value := r.Context().Value("userName")
+	user := fmt.Sprintf("%v", value)
 	order, username, err := a.storage.GetOrderAndUser(r.Context(), string(body))
 	if err == nil && order == string(body) {
 		if user == username {
@@ -176,13 +171,8 @@ func (a *App) OrdersIn(w http.ResponseWriter, r *http.Request) {
 func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	var ordersFloat []models.OrderFloat
 
-	cookie, _ := r.Cookie("token")
-	user, err := auth.GetUsername(cookie.Value)
-	if err != nil {
-		a.logger.Logger.Errorf("err: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	value := r.Context().Value("userName")
+	user := fmt.Sprintf("%v", value)
 
 	orders, err := a.storage.GetUserOrders(r.Context(), user)
 	if err != nil {
@@ -221,13 +211,9 @@ func (a *App) OrdersInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) GetBalance(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("token")
-	user, err := auth.GetUsername(cookie.Value)
-	if err != nil {
-		a.logger.Logger.Errorf("err: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	value := r.Context().Value("userName")
+	user := fmt.Sprintf("%v", value)
+
 	balance, err := a.storage.GetUserBalance(r.Context(), user)
 	if err != nil {
 		a.logger.Logger.Errorf("err: %v", err)
@@ -261,14 +247,9 @@ func (a *App) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, _ := r.Cookie("token")
+	value := r.Context().Value("userName")
+	user := fmt.Sprintf("%v", value)
 
-	user, err := auth.GetUsername(cookie.Value)
-	if err != nil {
-		a.logger.Logger.Errorf("err: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	userBalance, err := a.storage.GetUserBalance(r.Context(), user)
 
 	if err != nil {
@@ -299,14 +280,9 @@ func (a *App) Withdraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (a *App) WithdrawInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("token")
+	value := r.Context().Value("userName")
+	user := fmt.Sprintf("%v", value)
 
-	user, err := auth.GetUsername(cookie.Value)
-	if err != nil {
-		a.logger.Logger.Errorf("err: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	withdrawns, err := a.storage.GetUserWithdrawns(r.Context(), user)
 
 	if err != nil {

@@ -1,17 +1,19 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sinfirst/Ref-System/internal/config"
+	"github.com/sinfirst/Ref-System/internal/models"
 )
 
 type Claims struct {
 	jwt.RegisteredClaims
-	Username string
+	UserName string
 }
 
 func BuildJWTString(user string) (string, error) {
@@ -19,7 +21,7 @@ func BuildJWTString(user string) (string, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.TokenExp)),
 		},
-		Username: user,
+		UserName: user,
 	})
 
 	tokenString, err := token.SignedString([]byte(config.SecretKey))
@@ -29,25 +31,6 @@ func BuildJWTString(user string) (string, error) {
 	}
 
 	return tokenString, nil
-}
-
-func GetUsername(tokenString string) (string, error) {
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims,
-		func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-			}
-			return []byte(config.SecretKey), nil
-		})
-	if err != nil {
-		return "", err
-	}
-
-	if !token.Valid {
-		return "", fmt.Errorf("token no valid")
-	}
-	return claims.Username, nil
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -72,7 +55,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		if !token.Valid {
 			return
 		}
-		//ctx := context.WithValue(r.Context(), "userName", claims.Username)
-		next.ServeHTTP(w, r)
+		ctxK := models.CtxKey("userName")
+		ctx := context.WithValue(r.Context(), ctxK, claims.UserName)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+
 	})
 }
