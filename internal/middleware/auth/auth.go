@@ -49,10 +49,12 @@ func AuthMiddleware(next http.Handler) http.Handler {
 				return []byte(config.SecretKey), nil
 			})
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		if !token.Valid {
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		ctxK := models.CtxKey("userName")
