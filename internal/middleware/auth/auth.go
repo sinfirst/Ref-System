@@ -47,18 +47,32 @@ func GetUsername(tokenString string) (string, error) {
 	if !token.Valid {
 		return "", fmt.Errorf("token no valid")
 	}
-
 	return claims.Username, nil
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := r.Cookie("token")
-
+		cookie, err := r.Cookie("token")
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(cookie.Value, claims,
+			func(t *jwt.Token) (interface{}, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+				}
+				return []byte(config.SecretKey), nil
+			})
+		if err != nil {
+			return
+		}
+
+		if !token.Valid {
+			return
+		}
+		//ctx := context.WithValue(r.Context(), "userName", claims.Username)
 		next.ServeHTTP(w, r)
 	})
 }

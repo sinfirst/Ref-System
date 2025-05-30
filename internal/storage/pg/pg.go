@@ -81,14 +81,16 @@ func (p *PGDB) GetUserPassword(ctx context.Context, username string) (string, er
 }
 
 func (p *PGDB) GetOrderAndUser(ctx context.Context, order string) (string, string, error) {
-	var userOrder string
-	var username string
+	var userORder string
+	var userName string
 
 	query := `SELECT number, username FROM orders WHERE number = $1`
 	row := p.db.QueryRow(ctx, query, order)
-	err := row.Scan(&userOrder, &username)
-
-	return userOrder, username, err
+	err := row.Scan(&userORder, &userName)
+	if err != nil {
+		return "", "", err
+	}
+	return userORder, userName, nil
 }
 
 func (p *PGDB) AddOrderToDB(ctx context.Context, order string, username string) error {
@@ -96,7 +98,11 @@ func (p *PGDB) AddOrderToDB(ctx context.Context, order string, username string) 
 				VALUES ($1, $2, $3) ON CONFLICT (number) DO NOTHING`
 	_, err := p.db.Exec(ctx, query, order, time.Now(), username)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *PGDB) UpdateStatus(ctx context.Context, newStatus, order, user string) error {
@@ -131,7 +137,7 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 	return nil
 }
 
-func (p *PGDB) UpdateStatusAndBalanceForWorker(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
+func (p *PGDB) Update(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
 	tx, err := p.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
