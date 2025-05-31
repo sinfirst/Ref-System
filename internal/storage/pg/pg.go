@@ -137,7 +137,7 @@ func (p *PGDB) UpdateUserBalance(ctx context.Context, user string, accrual, with
 	return nil
 }
 
-func (p *PGDB) Update(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
+func (p *PGDB) UpdateOrderProgress(ctx context.Context, newStatus, order, user string, accrual, withdrawn float64) error {
 	tx, err := p.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

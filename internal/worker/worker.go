@@ -94,7 +94,7 @@ func (w *Worker) Poll(ctx context.Context, order models.TypeForChannel) error {
 			}
 
 			if response.Status == "PROCESSED" {
-				err = w.db.Update(ctx, response.Status, response.Order, order.User, float64(response.Accrual), 0)
+				err = w.db.UpdateOrderProgress(ctx, response.Status, response.Order, order.User, float64(response.Accrual), 0)
 				if err != nil {
 					return fmt.Errorf("error in update db: ")
 				}
